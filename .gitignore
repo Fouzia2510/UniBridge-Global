@@ -1,0 +1,85 @@
+*.log
+.DS_Store
+.env
+.env.backup
+.env.production
+.phpactor.json
+.phpunit.result.cache
+/.fleet
+/.idea
+/.nova
+/.phpunit.cache
+/.vscode
+/.zed
+/auth.json
+/node_modules
+/public/hot
+/public/storage
+/storage/*.key
+/storage/pail
+/vendor
+Homestead.json
+Homestead.yaml
+Thumbs.db
+
+# Local database exports and backups
+*.sql
+*_backup_*/
+
+# Private application files and user uploads
+/storage/app/private/
+/storage/app/public/
+/storage/logs/
+/storage/framework/
+
+# Generated Laravel cache
+/bootstrap/cache/*.php
+
+# All local environment variants (keep example template)
+.env.*
+!.env.example
+
+# WhatsApp recovery data
+/whatsapp-recovery-backup/
+
+# Local diagnostic output files
+/0
+/tatus --short
+
+# UniBridge local group-chat recovery backups
+/storage/app/unibridge_group_chat_*_backup_*/
+
+# Local diagnostic and audit reports
+/controller-check.txt
+/route-check.txt
+/unibridge-launch-audit.txt
+/visitor-detail-copy.txt
+/webhook-search.txt
+
+# Local source-code recovery copies
+*.backup*
+*.bak
+*.before-*
+*.before_*
+*.damaged-*
+*.pre-ai-integration.php
+
+# Additional recovery and dated backup filename patterns
+*.bak*
+*.bom-backup
+*.broken-backup*
+*before-*
+*before_*
+*damaged*
+*pre-*
+
+# Commands capable of sending live WhatsApp test messages
+/app/Console/Commands/TestKapsoMessage.php
+
+# Unusual unreferenced student view copy
+/resources/views/Student/resources/views/student
+
+# Vite local development marker
+/public/hot
+*-backup*
+*_backup*

@@ -1,0 +1,23 @@
+{
+  "resources/css/app.css": {
+    "file": "assets/app-R0NY6Ko9.css",
+    "src": "resources/css/app.css",
+    "isEntry": true,
+    "name": "app",
+    "names": [
+      "app.css"
+    ]
+  },
+  "resources/js/app.js": {
+    "file": "assets/app-_M3PTXqZ.js",
+    "name": "app",
+    "src": "resources/js/app.js",
+    "isEntry": true
+  },
+  "resources/js/face-liveness.js": {
+    "file": "assets/face-liveness-SbvxEHiK.js",
+    "name": "face-liveness",
+    "src": "resources/js/face-liveness.js",
+    "isEntry": true
+  }
+}

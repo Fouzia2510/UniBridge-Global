@@ -1,0 +1,622 @@
+@import "tailwindcss";
+
+@source "../../resources/views/**/*.blade.php";
+@source "../../resources/js/**/*.js";
+
+/* =========================================================
+   UNIBRIDGE DESIGN SYSTEM
+    Navy + Blue + White
+   ========================================================= */
+
+@theme {
+    --color-ub-red: #2563eb;
+    --color-ub-red-dark: #1d4ed8;
+    --color-ub-red-light: #eff6ff;
+
+    --color-ub-black: #0b1736;
+    --color-ub-black-soft: #162d63;
+
+    --color-ub-yellow: #2563eb;
+    --color-ub-yellow-dark: #1d4ed8;
+    --color-ub-yellow-light: #eff6ff;
+
+    --color-ub-white: #ffffff;
+    --color-ub-gray: #f5f8fc;
+    --color-ub-muted: #64748b;
+
+    --shadow-ub: 0 10px 30px rgba(15, 23, 42, 0.08);
+    --shadow-ub-lg: 0 20px 45px rgba(15, 23, 42, 0.12);
+}
+
+/* =========================================================
+   GLOBAL
+   ========================================================= */
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: Arial, Helvetica, sans-serif;
+    background: #f5f8fc;
+    color: #14213d;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+/* =========================================================
+   GLOBAL SVG / ICON SAFETY
+   Prevent oversized SVG icons
+   ========================================================= */
+
+svg {
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
+}
+
+svg:not([width]):not([height]) {
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+button svg,
+a svg {
+    flex-shrink: 0;
+}
+
+img {
+    max-width: 100%;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+    transition:
+        background-color 0.2s ease,
+        border-color 0.2s ease,
+        color 0.2s ease,
+        box-shadow 0.2s ease,
+        transform 0.2s ease;
+}
+
+a {
+    text-decoration: none;
+}
+
+/* =========================================================
+   UNIBRIDGE BRAND
+   ========================================================= */
+
+.ub-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 800;
+    color: #ffffff;
+}
+
+.ub-brand-mark {
+    width: 42px;
+    height: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #2563eb, #0b1736);
+    color: #ffffff;
+    font-size: 20px;
+    font-weight: 900;
+    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.22);
+    flex-shrink: 0;
+}
+
+.ub-brand-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.05;
+}
+
+.ub-brand-name {
+    font-size: 18px;
+    letter-spacing: -0.3px;
+}
+
+.ub-brand-tagline {
+    margin-top: 4px;
+    color: #93c5fd;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+}
+
+/* =========================================================
+   BRAND BACKGROUNDS
+   ========================================================= */
+
+.ub-bg {
+    background: #f5f8fc;
+}
+
+.ub-dark {
+    background: #0b1736;
+    color: #ffffff;
+}
+
+.ub-dark-soft {
+    background: #162d63;
+    color: #ffffff;
+}
+
+.ub-red {
+    background: #2563eb;
+    color: #ffffff;
+}
+
+.ub-red-dark {
+    background: #1d4ed8;
+    color: #ffffff;
+}
+
+.ub-yellow {
+    background: #eff6ff;
+    color: #1d4ed8;
+}
+
+/* =========================================================
+   BRAND TEXT
+   ========================================================= */
+
+.ub-text-red {
+    color: #2563eb;
+}
+
+.ub-text-yellow {
+    color: #1d4ed8;
+}
+
+.ub-text-dark {
+    color: #0b1736;
+}
+
+.ub-text-muted {
+    color: #6b7280;
+}
+
+/* =========================================================
+   CARDS
+   ========================================================= */
+
+.ub-card {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 18px;
+    box-shadow: var(--shadow-ub);
+}
+
+.ub-card:hover {
+    border-color: #bfdbfe;
+    box-shadow: var(--shadow-ub-lg);
+    transform: translateY(-2px);
+}
+
+.ub-card-flat {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+}
+
+.ub-card-dark {
+    background: #0b1736;
+    border: 1px solid #1e3a8a;
+    border-radius: 18px;
+    color: #ffffff;
+}
+
+/* =========================================================
+   BUTTONS
+   ========================================================= */
+
+.ub-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 42px;
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    border: 0;
+}
+
+.ub-btn svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+.ub-btn-primary {
+    background: #2563eb;
+    color: #ffffff;
+}
+
+.ub-btn-primary:hover {
+    background: #1d4ed8;
+    transform: translateY(-1px);
+}
+
+.ub-btn-dark {
+    background: #0b1736;
+    color: #ffffff;
+}
+
+.ub-btn-dark:hover {
+    background: #162d63;
+}
+
+.ub-btn-yellow {
+    background: #eff6ff;
+    color: #1d4ed8;
+}
+
+.ub-btn-yellow:hover {
+    background: #dbeafe;
+}
+
+.ub-btn-outline {
+    background: #ffffff;
+    color: #2563eb;
+    border: 1px solid #2563eb;
+}
+
+.ub-btn-outline:hover {
+    background: #eff6ff;
+}
+
+/* =========================================================
+   BADGES
+   ========================================================= */
+
+.ub-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.ub-badge svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+}
+
+.ub-badge-red {
+    background: #eff6ff;
+    color: #1d4ed8;
+}
+
+.ub-badge-yellow {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.ub-badge-dark {
+    background: #e5e7eb;
+    color: #0b1736;
+}
+
+.ub-badge-green {
+    background: #dcfce7;
+    color: #166534;
+}
+
+/* =========================================================
+   STAT CARDS
+   ========================================================= */
+
+.ub-stat {
+    position: relative;
+    overflow: hidden;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 18px;
+    padding: 22px;
+    box-shadow: var(--shadow-ub);
+}
+
+.ub-stat::after {
+    content: "";
+    position: absolute;
+    width: 90px;
+    height: 90px;
+    right: -35px;
+    top: -35px;
+    border-radius: 50%;
+    background: #eff6ff;
+}
+
+.ub-stat-red {
+    border-top: 4px solid #2563eb;
+}
+
+.ub-stat-yellow {
+    border-top: 4px solid #60a5fa;
+}
+
+.ub-stat-dark {
+    border-top: 4px solid #0b1736;
+}
+
+/* =========================================================
+   SECTION HEADERS
+   ========================================================= */
+
+.ub-section-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #0b1736;
+    font-size: 20px;
+    font-weight: 800;
+}
+
+.ub-section-title::before {
+    content: "";
+    width: 5px;
+    height: 24px;
+    border-radius: 999px;
+    background: #2563eb;
+}
+
+/* =========================================================
+   TABLES
+   ========================================================= */
+
+.ub-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.ub-table thead {
+    background: #0b1736;
+    color: #ffffff;
+}
+
+.ub-table th {
+    padding: 13px 16px;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.ub-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid #e5e7eb;
+    font-size: 14px;
+}
+
+.ub-table tbody tr:hover {
+    background: #f5f8fc;
+}
+
+/* =========================================================
+   FORM ELEMENTS
+   ========================================================= */
+
+.ub-input,
+.ub-select,
+.ub-textarea {
+    width: 100%;
+    border: 1px solid #d1d5db;
+    background: #ffffff;
+    color: #111827;
+    border-radius: 10px;
+    padding: 10px 13px;
+    outline: none;
+    font-size: 14px;
+}
+
+.ub-input:focus,
+.ub-select:focus,
+.ub-textarea:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.ub-label {
+    display: block;
+    margin-bottom: 6px;
+    color: #374151;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+/* =========================================================
+   ADMIN SIDEBAR / NAV
+   ========================================================= */
+
+.ub-sidebar {
+    background: #0b1736;
+    color: #ffffff;
+}
+
+.ub-sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 11px 14px;
+    border-radius: 10px;
+    color: #d1d5db;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.ub-sidebar-link svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+.ub-sidebar-link:hover {
+    background: #162d63;
+    color: #ffffff;
+}
+
+.ub-sidebar-link.active {
+    background: #2563eb;
+    color: #ffffff;
+    box-shadow: 0 5px 15px rgba(37, 99, 235, 0.22);
+}
+
+.ub-sidebar-section {
+    margin: 22px 0 8px;
+    padding: 0 14px;
+    color: #93c5fd;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+/* =========================================================
+   ADMIN TOP BAR
+   ========================================================= */
+
+.ub-topbar {
+    min-height: 70px;
+    background: #ffffff;
+    border-bottom: 1px solid #e5e7eb;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+}
+
+.ub-topbar-dark {
+    background: #0b1736;
+    color: #ffffff;
+}
+
+/* =========================================================
+   ALERTS
+   ========================================================= */
+
+.ub-alert {
+    padding: 13px 16px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.ub-alert-success {
+    background: #dcfce7;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+}
+
+.ub-alert-danger {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+}
+
+.ub-alert-warning {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+}
+
+/* =========================================================
+   ROLE COLORS
+   ========================================================= */
+
+.ub-role-student {
+    background: #eff6ff;
+    color: #1d4ed8;
+}
+
+.ub-role-consultant {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.ub-role-admin {
+    background: #e5e7eb;
+    color: #0b1736;
+}
+
+/* =========================================================
+   DIVIDERS
+   ========================================================= */
+
+.ub-divider {
+    height: 1px;
+    width: 100%;
+    background: #e5e7eb;
+}
+
+.ub-divider-dark {
+    height: 1px;
+    width: 100%;
+    background: #dbeafe;
+}
+
+/* =========================================================
+   SCROLLBAR
+   ========================================================= */
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #2563eb;
+    border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #1d4ed8;
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 768px) {
+
+    .ub-brand-name {
+        font-size: 16px;
+    }
+
+    .ub-brand-mark {
+        width: 38px;
+        height: 38px;
+    }
+
+    .ub-card,
+    .ub-stat {
+        border-radius: 14px;
+    }
+
+    .ub-table {
+        min-width: 700px;
+    }
+}
