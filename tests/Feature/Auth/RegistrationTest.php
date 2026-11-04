@@ -19,11 +19,13 @@ class RegistrationTest extends TestCase
 
     public function test_new_users_can_register(): void
     {
+        $password = 'UniBridge!' . random_int(100000, 999999);
+
         $response = $this->post('/register', [
             'name' => 'Test User',
             'email' => 'test@example.com',
-            'password' => 'password',
-            'password_confirmation' => 'password',
+            'password' => $password,
+            'password_confirmation' => $password,
             'role' => User::ROLE_STUDENT,
             'roll_number' => 'TEST-001',
             'department' => 'Computer Science',

@@ -4,41 +4,36 @@ namespace App\Providers;
 
 use App\services\GeminiService;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Validation\Rules\Password;
 
 class AppServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     */
     public function register(): void
     {
-        $this->app->singleton(GeminiService::class, function (): GeminiService {
-
-            $apiKey = config('gemini.api_key');
-
-            if (! is_string($apiKey) || trim($apiKey) === '') {
-                throw new \RuntimeException(
-                    'GEMINI_API_KEY is not configured.'
+        $this->app->singleton(
+            GeminiService::class,
+            function (): GeminiService {
+                return new GeminiService(
+                    (string) config(
+                        'ollama.base_url',
+                        'http://127.0.0.1:11434'
+                    ),
+                    (string) config('ollama.model', 'gemma3:1b'),
+                    (int) config('ollama.timeout', 120),
                 );
             }
-
-            $client = \Gemini::client($apiKey);
-
-            return new GeminiService(
-                $client,
-                (string) config(
-                    'gemini.model',
-                    'gemini-3.1-flash-lite'
-                ),
-            );
-        });
+        );
     }
 
-    /**
-     * Bootstrap any application services.
-     */
     public function boot(): void
     {
-        //
+        Password::defaults(function () {
+            return Password::min(12)
+                ->mixedCase()
+                ->letters()
+                ->numbers()
+                ->symbols()
+                ->uncompromised();
+        });
     }
 }

@@ -2,13 +2,15 @@
 
 namespace App\services;
 
+use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
 class GeminiService
 {
     public function __construct(
-        private readonly object $client,
-        private readonly string $model
+        private readonly string $baseUrl,
+        private readonly string $model,
+        private readonly int $timeout
     ) {
     }
 
@@ -18,15 +20,23 @@ class GeminiService
             throw new RuntimeException('A prompt is required.');
         }
 
-        $response = $this->client
-            ->generativeModel($this->model)
-            ->generateContent($prompt);
+        $response = Http::acceptJson()
+            ->timeout($this->timeout)
+            ->post(
+                rtrim($this->baseUrl, '/') . '/api/generate',
+                [
+                    'model' => $this->model,
+                    'prompt' => $prompt,
+                    'stream' => false,
+                ]
+            )
+            ->throw();
 
-        $text = trim((string) $response->text());
+        $text = trim((string) $response->json('response'));
 
         if ($text === '') {
             throw new RuntimeException(
-                'Gemini returned an empty response.'
+                'Ollama returned an empty response.'
             );
         }
 

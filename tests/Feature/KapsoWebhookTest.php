@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\WhatsAppBroadcast;
 use App\Models\WhatsAppBroadcastRecipient;
 use App\Models\WhatsAppConversation;
+use App\Models\WhatsAppContact;
 use App\Models\WhatsAppMessage;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -172,7 +173,56 @@ class KapsoWebhookTest extends TestCase
             'status' => 'received',
         ]);
     }
+    public function test_new_incoming_number_is_added_to_central_contacts(): void
+    {
+        $secret = 'test-webhook-secret';
 
+        config([
+            'services.kapso.webhook_secret' => $secret,
+        ]);
+
+        $payload = json_encode([
+            'type' => 'whatsapp.message.received',
+            'conversation' => [
+                'phone_number' => '923001234567',
+                'contact_name' => 'New Incoming Contact',
+            ],
+            'message' => [
+                'id' => 'central-contact-test-001',
+                'from' => '923001234567',
+                'type' => 'text',
+                'timestamp' => time(),
+                'text' => [
+                    'body' => 'Hello UniBridge',
+                ],
+            ],
+        ]);
+
+        $signature = hash_hmac('sha256', $payload, $secret);
+
+        $response = $this->call(
+            'POST',
+            '/webhooks/kapso',
+            [],
+            [],
+            [],
+            [
+                'CONTENT_TYPE' => 'application/json',
+                'HTTP_X_WEBHOOK_SIGNATURE' => $signature,
+            ],
+            $payload
+        );
+
+        $response->assertOk();
+
+        $this->assertDatabaseHas('whatsapp_contacts', [
+            'phone_number' => '923001234567',
+            'contact_name' => 'New Incoming Contact',
+            'contact_type' => 'incoming',
+        ]);
+
+        $this->assertDatabaseCount('whatsapp_contact_consents', 0);
+    }
     public function test_duplicate_incoming_message_is_not_stored_twice(): void
     {
         $secret = 'test-webhook-secret';
@@ -220,7 +270,181 @@ class KapsoWebhookTest extends TestCase
         $this->assertDatabaseCount('whatsapp_messages', 1);
         $this->assertDatabaseCount('whatsapp_conversations', 1);
     }
+    public function test_incoming_message_reuses_existing_local_format_conversation(): void
+{
+    $secret = 'test-webhook-secret';
 
+    config([
+        'services.kapso.webhook_secret' => $secret,
+    ]);
+
+    $conversation = WhatsAppConversation::create([
+        'phone_number' => '03001234567',
+        'contact_name' => 'Existing Local Contact',
+        'status' => 'open',
+        'last_message_at' => now()->subHour(),
+    ]);
+
+    $payload = json_encode([
+        'type' => 'whatsapp.message.received',
+        'conversation' => [
+            'phone_number' => '03001234567',
+            'contact_name' => 'Existing Local Contact',
+        ],
+        'message' => [
+            'id' => 'local-duplicate-test-001',
+            'from' => '03001234567',
+            'type' => 'text',
+            'timestamp' => time(),
+            'text' => [
+                'body' => 'Testing existing conversation reuse',
+            ],
+        ],
+    ]);
+
+    $signature = hash_hmac('sha256', $payload, $secret);
+
+    $response = $this->call(
+        'POST',
+        '/webhooks/kapso',
+        [],
+        [],
+        [],
+        [
+            'CONTENT_TYPE' => 'application/json',
+            'HTTP_X_WEBHOOK_SIGNATURE' => $signature,
+        ],
+        $payload
+    );
+
+    $response->assertOk();
+
+    $this->assertDatabaseCount('whatsapp_conversations', 1);
+
+    $this->assertDatabaseHas('whatsapp_messages', [
+        'conversation_id' => $conversation->id,
+        'provider_message_id' => 'local-duplicate-test-001',
+    ]);
+}
+public function test_incoming_message_uses_latest_matching_conversation(): void
+{
+    $secret = 'test-webhook-secret';
+
+    config([
+        'services.kapso.webhook_secret' => $secret,
+    ]);
+
+    $olderConversation = WhatsAppConversation::create([
+        'phone_number' => '03001234567',
+        'contact_name' => 'Older Contact',
+        'status' => 'open',
+        'last_message_at' => now()->subHours(2),
+    ]);
+
+    $latestConversation = WhatsAppConversation::create([
+        'phone_number' => '923001234567',
+        'contact_name' => 'Latest Contact',
+        'status' => 'open',
+        'last_message_at' => now()->subHour(),
+    ]);
+
+    $payload = json_encode([
+        'type' => 'whatsapp.message.received',
+        'conversation' => [
+            'phone_number' => '03001234567',
+            'contact_name' => 'Latest Contact',
+        ],
+        'message' => [
+            'id' => 'latest-conversation-test-001',
+            'from' => '03001234567',
+            'type' => 'text',
+            'timestamp' => time(),
+            'text' => [
+                'body' => 'Testing latest conversation selection',
+            ],
+        ],
+    ]);
+
+    $signature = hash_hmac('sha256', $payload, $secret);
+
+    $response = $this->call(
+        'POST',
+        '/webhooks/kapso',
+        [],
+        [],
+        [],
+        [
+            'CONTENT_TYPE' => 'application/json',
+            'HTTP_X_WEBHOOK_SIGNATURE' => $signature,
+        ],
+        $payload
+    );
+
+    $response->assertOk();
+
+    $this->assertDatabaseCount('whatsapp_conversations', 2);
+
+    $this->assertDatabaseHas('whatsapp_messages', [
+        'conversation_id' => $latestConversation->id,
+        'provider_message_id' => 'latest-conversation-test-001',
+    ]);
+
+    $this->assertDatabaseMissing('whatsapp_messages', [
+        'conversation_id' => $olderConversation->id,
+        'provider_message_id' => 'latest-conversation-test-001',
+    ]);
+}
+    public function test_incoming_local_number_is_normalized_before_contact_creation(): void
+    {
+        $secret = 'test-webhook-secret';
+
+        config([
+            'services.kapso.webhook_secret' => $secret,
+        ]);
+
+        $payload = json_encode([
+            'type' => 'whatsapp.message.received',
+            'conversation' => [
+                'phone_number' => '03001234567',
+                'contact_name' => 'Normalized Contact',
+            ],
+            'message' => [
+                'id' => 'normalized-contact-test-001',
+                'from' => '03001234567',
+                'type' => 'text',
+                'timestamp' => time(),
+                'text' => [
+                    'body' => 'Testing number normalization',
+                ],
+            ],
+        ]);
+
+        $signature = hash_hmac('sha256', $payload, $secret);
+
+        $response = $this->call(
+            'POST',
+            '/webhooks/kapso',
+            [],
+            [],
+            [],
+            [
+                'CONTENT_TYPE' => 'application/json',
+                'HTTP_X_WEBHOOK_SIGNATURE' => $signature,
+            ],
+            $payload
+        );
+
+        $response->assertOk();
+
+        $this->assertDatabaseHas('whatsapp_contacts', [
+            'phone_number' => '923001234567',
+            'contact_name' => 'Normalized Contact',
+        ]);
+
+        $this->assertDatabaseMissing('whatsapp_contacts', [
+            'phone_number' => '03001234567',
+        ]);
+    }
     public function test_webhook_rejects_invalid_json_payload(): void
     {
         $secret = 'test-webhook-secret';

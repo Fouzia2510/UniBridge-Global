@@ -50,6 +50,30 @@ class AuthenticationTest extends TestCase
         $this->assertGuest();
     }
 
+    public function test_login_is_rate_limited_after_five_failed_attempts(): void
+    {
+        $user = User::factory()->create([
+            'role' => User::ROLE_STUDENT,
+            'email' => 'throttle-test@example.com',
+        ]);
+
+        $credentials = [
+            'email' => $user->email,
+            'password' => 'wrong-password',
+            'role' => User::ROLE_STUDENT,
+        ];
+
+        for ($attempt = 0; $attempt < 5; $attempt++) {
+            $this->post('/login', $credentials)
+                ->assertSessionHasErrors('email');
+        }
+
+        $this->post('/login', $credentials)
+            ->assertSessionHasErrors('email');
+
+        $this->assertGuest();
+    }
+
     public function test_users_can_logout(): void
     {
         $user = User::factory()->create();

@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\WhatsAppBroadcastRecipient;
+use App\Models\WhatsAppContact;
 use App\Models\WhatsAppConversation;
 use App\Models\WhatsAppMessage;
+use App\services\WhatsAppPhoneNormalizer;
 use App\Services\WhatsAppAIResponder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -165,15 +167,12 @@ class KapsoWebhookController extends Controller
         array $event,
         array $message
     ): ?array {
-        $phone = preg_replace(
-            '/\D+/',
-            '',
+        $phone = WhatsAppPhoneNormalizer::normalize(
             (string) (
                 data_get($event, 'conversation.phone_number')
                 ?? ($message['from'] ?? '')
             )
         );
-
         $messageId = $message['id'] ?? null;
 
         if (
@@ -230,19 +229,47 @@ class KapsoWebhookController extends Controller
             $event,
             $sentAt
         ): ?array {
-            $conversation = WhatsAppConversation::firstOrCreate(
-                ['phone_number' => $phone],
-                [
-                    'contact_name' => $contactName,
-                    'status' => 'open',
-                    'last_message_at' => $sentAt,
-                ]
-            );
+           $conversation = WhatsAppConversation::query()
+    ->get()
+    ->filter(
+        fn (WhatsAppConversation $item) =>
+            WhatsAppPhoneNormalizer::normalize(
+                (string) $item->phone_number
+            ) === $phone
+    )
+    ->sortByDesc(
+        fn (WhatsAppConversation $item) =>
+            $item->last_message_at?->timestamp
+            ?? $item->updated_at?->timestamp
+            ?? 0
+    )
+    ->first();
+
+if (! $conversation) {
+    $conversation = WhatsAppConversation::create([
+        'phone_number' => $phone,
+        'contact_name' => $contactName,
+        'status' => 'open',
+        'last_message_at' => $sentAt,
+    ]);
+}
 
             if ($contactName && ! $conversation->contact_name) {
                 $conversation->contact_name = $contactName;
             }
+            $centralContact = WhatsAppContact::firstOrCreate(
+                ['phone_number' => $phone],
+                [
+                    'contact_name' => $contactName,
+                    'contact_type' => 'incoming',
+                ]
+            );
 
+                        // Update the name only when the central contact has no name.
+            if ($contactName && ! $centralContact->contact_name) {
+                $centralContact->contact_name = $contactName;
+                $centralContact->save();
+            }
             $saved = WhatsAppMessage::firstOrCreate(
                 ['provider_message_id' => $messageId],
                 [

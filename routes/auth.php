@@ -55,10 +55,10 @@ Route::middleware('guest')->group(function () {
         'create'
     ])->name('password.reset');
 
-Route::post('reset-password', [
-    NewPasswordController::class,
-    'store'
-])->name('password.store');
+    Route::post('reset-password', [
+        NewPasswordController::class,
+        'store'
+    ])->name('password.store');
 });
 
 
@@ -93,12 +93,16 @@ Route::middleware('auth')->group(function () {
     Route::post(
         '/two-factor/verify',
         [TwoFactorController::class, 'verify']
-    )->name('two-factor.verify.store');
+    )
+        ->middleware('throttle:5,1')
+        ->name('two-factor.verify.store');
 
     Route::post(
         '/two-factor/resend',
         [TwoFactorController::class, 'resend']
-    )->name('two-factor.resend');
+    )
+        ->middleware('throttle:3,10')
+        ->name('two-factor.resend');
 
     Route::post(
         '/two-factor/cancel',

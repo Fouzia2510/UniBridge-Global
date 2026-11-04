@@ -48,11 +48,13 @@ return Application::configure(
             |--------------------------------------------------------------------------
             */
 
-            $middleware->web(
-                append: [
-                    \App\Http\Middleware\TwoFactorMiddleware::class,
-                ]
-            );
+$middleware->web(
+    append: [
+        \App\Http\Middleware\TwoFactorMiddleware::class,
+    ]
+);
+
+$middleware->authenticateSessions();
         }
     )
     ->withExceptions(

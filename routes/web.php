@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
@@ -304,7 +304,21 @@ Route::get('/whatsapp/groups', [
             AdminWhatsAppController::class,
             'groupsPage',
         ])->name('whatsapp.groups');
+        // Central WhatsApp Contacts
+        Route::get('/whatsapp/contacts', [
+            AdminWhatsAppController::class,
+            'contactsPage',
+        ])->name('whatsapp.contacts');
+                // Add and edit central WhatsApp contacts
+        Route::post('/whatsapp/contacts', [
+            AdminWhatsAppController::class,
+            'storeContact',
+        ])->name('whatsapp.contacts.store');
 
+        Route::patch('/whatsapp/contacts/{contact}', [
+            AdminWhatsAppController::class,
+            'updateContact',
+        ])->name('whatsapp.contacts.update');
         Route::get('/whatsapp/broadcasts', [
             AdminWhatsAppController::class,
             'broadcastsPage',
@@ -677,6 +691,7 @@ Route::middleware([
 Route::middleware([
     'auth',
     'role:admin,consultant,student',
+    'approved',
 ])->group(function () {
 
     Route::get('/auth/google/classroom/connect', [
@@ -703,6 +718,7 @@ Route::prefix('student')
     ->middleware([
         'auth',
         'role:student',
+        'approved',
     ])
     ->group(function () {
 

@@ -83,7 +83,10 @@ class MeetingJoinTrackingTest extends TestCase
     public function test_elapsed_slot_cannot_be_booked(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-10-30 15:00:00', config('app.timezone')));
-        $student = User::factory()->create(['role' => User::ROLE_STUDENT]);
+        $student = User::factory()->create([
+            'role' => User::ROLE_STUDENT,
+            'is_approved' => true,
+        ]);
         $consultant = User::factory()->create(['role' => User::ROLE_CONSULTANT]);
         $slot = AvailabilitySlot::create([
             'consultant_id' => $consultant->id,

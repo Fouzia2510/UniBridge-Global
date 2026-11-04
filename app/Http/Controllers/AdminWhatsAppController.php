@@ -5,12 +5,16 @@ namespace App\Http\Controllers;
 use App\Models\WhatsAppBroadcast;
 use App\Models\WhatsAppBroadcastRecipient;
 use App\Models\WhatsAppConversation;
+use App\Models\WhatsAppContact;
+use App\Models\WhatsAppContactConsent;
 use App\Models\WhatsAppGroup;
 use App\Models\WhatsAppGroupMember;
 use App\Models\WhatsAppGroupMessage;
 use App\Models\WhatsAppMessage;
 use App\Services\KapsoWhatsAppService;
+use App\services\WhatsAppPhoneNormalizer;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -75,9 +79,7 @@ class AdminWhatsAppController extends Controller
             );
 
             if ($member) {
-                $phone = preg_replace(
-                    '/[^0-9]/',
-                    '',
+                $phone = WhatsAppPhoneNormalizer::normalize(
                     $member->phone_number
                 );
 
@@ -167,12 +169,10 @@ class AdminWhatsAppController extends Controller
             ],
         ]);
 
-        // Keep digits only for storage and matching.
-        $phone = preg_replace(
-            '/\D+/',
-            '',
-            $validated['phone_number']
-        );
+       // Normalize Pakistani and international numbers consistently.
+$phone = WhatsAppPhoneNormalizer::normalize(
+    $validated['phone_number']
+);
 
         if (
             ! is_string($phone) ||
@@ -244,15 +244,11 @@ class AdminWhatsAppController extends Controller
 
         // Prevent sending to unauthorized recipients in sandbox mode.
         if (config('services.kapso.sandbox_mode', true)) {
-            $recipient = preg_replace(
-                '/\D+/',
-                '',
+            $recipient = WhatsAppPhoneNormalizer::normalize(
                 (string) $conversation->phone_number
             );
 
-            $sandboxRecipient = preg_replace(
-                '/\D+/',
-                '',
+            $sandboxRecipient = WhatsAppPhoneNormalizer::normalize(
                 (string) config('services.kapso.sandbox_recipient', '')
             );
 
@@ -456,15 +452,11 @@ class AdminWhatsAppController extends Controller
         $caption = trim((string) ($validated['caption'] ?? ''));
 
         if (config('services.kapso.sandbox_mode', true)) {
-            $recipient = preg_replace(
-                '/\D+/',
-                '',
+            $recipient = WhatsAppPhoneNormalizer::normalize(
                 (string) $conversation->phone_number
             );
 
-            $sandboxRecipient = preg_replace(
-                '/\D+/',
-                '',
+            $sandboxRecipient = WhatsAppPhoneNormalizer::normalize(
                 (string) config('services.kapso.sandbox_recipient', '')
             );
 
@@ -603,15 +595,11 @@ class AdminWhatsAppController extends Controller
         ]);
 
         if (config('services.kapso.sandbox_mode', true)) {
-            $recipient = preg_replace(
-                '/\D+/',
-                '',
+            $recipient = WhatsAppPhoneNormalizer::normalize(
                 (string) $conversation->phone_number
             );
 
-            $sandboxRecipient = preg_replace(
-                '/\D+/',
-                '',
+            $sandboxRecipient = WhatsAppPhoneNormalizer::normalize(
                 (string) config('services.kapso.sandbox_recipient', '')
             );
 
@@ -771,7 +759,7 @@ class AdminWhatsAppController extends Controller
             ->with('success', 'WhatsApp group deleted successfully.');
     }
 
-    /**
+       /**
      * Add a saved contact and record consent only when confirmed.
      */
     public function addMember(
@@ -800,9 +788,7 @@ class AdminWhatsAppController extends Controller
             ],
         ]);
 
-        $phone = preg_replace(
-            '/\D+/',
-            '',
+        $phone = WhatsAppPhoneNormalizer::normalize(
             $validated['phone_number']
         );
 
@@ -831,15 +817,49 @@ class AdminWhatsAppController extends Controller
         }
 
         $optedIn = $request->boolean('whatsapp_opt_in');
+        $contactName = trim($validated['contact_name']);
 
-        $group->members()->create([
-            'contact_name' => trim($validated['contact_name']),
-            'phone_number' => $phone,
-            'contact_type' => $validated['contact_type'],
-            'user_id' => null,
-            'whatsapp_opt_in' => $optedIn,
-            'opted_in_at' => $optedIn ? now() : null,
-        ]);
+        DB::transaction(function () use (
+            $group,
+            $phone,
+            $contactName,
+            $validated,
+            $optedIn,
+            $request
+        ): void {
+            $contact = WhatsAppContact::firstOrCreate(
+                ['phone_number' => $phone],
+                [
+                    'contact_name' => $contactName,
+                    'contact_type' => $validated['contact_type'],
+                ]
+            );
+
+            if (blank($contact->contact_name)) {
+                $contact->contact_name = $contactName;
+                $contact->save();
+            }
+
+            $group->members()->create([
+                'contact_name' => $contactName,
+                'phone_number' => $phone,
+                'contact_type' => $validated['contact_type'],
+                'user_id' => null,
+                'whatsapp_opt_in' => $optedIn,
+                'opted_in_at' => $optedIn ? now() : null,
+            ]);
+
+            if ($optedIn) {
+                WhatsAppContactConsent::create([
+                    'whatsapp_contact_id' => $contact->id,
+                    'status' => 'opted_in',
+                    'source' => 'admin_recorded',
+                    'evidence' => 'Admin confirmed explicit permission using the group contact form checkbox.',
+                    'recorded_by' => $request->user()?->id,
+                    'recorded_at' => now(),
+                ]);
+            }
+        });
 
         return redirect()
             ->route('admin.whatsapp.groups')
@@ -1213,17 +1233,46 @@ class AdminWhatsAppController extends Controller
     }
 
     public function chatsPage(): View
-    {
-        $conversations = WhatsAppConversation::query()
-            ->withCount('messages')
-            ->orderByDesc('last_message_at')
-            ->orderByDesc('updated_at')
-            ->paginate(20);
+{
+    $perPage = 20;
+    $currentPage = max(1, request()->integer('page', 1));
 
-        return view('admin.whatsapp.chats', [
-            'conversations' => $conversations,
-        ]);
-    }
+    $allConversations = WhatsAppConversation::query()
+        ->withCount('messages')
+        ->orderByDesc('last_message_at')
+        ->orderByDesc('updated_at')
+        ->orderByDesc('id')
+        ->get();
+
+    $uniqueConversations = $allConversations
+        ->unique(function ($conversation) {
+            $phone = WhatsAppPhoneNormalizer::normalize(
+                $conversation->phone_number
+            );
+
+            return $phone !== ''
+                ? $phone
+                : 'invalid:' . $conversation->id;
+        })
+        ->values();
+
+    $conversations = new LengthAwarePaginator(
+        $uniqueConversations
+            ->forPage($currentPage, $perPage)
+            ->values(),
+        $uniqueConversations->count(),
+        $perPage,
+        $currentPage,
+        [
+            'path' => request()->url(),
+            'query' => request()->query(),
+        ]
+    );
+
+    return view('admin.whatsapp.chats', [
+        'conversations' => $conversations,
+    ]);
+}
 
     public function groupsPage(): View
     {
@@ -1236,6 +1285,99 @@ class AdminWhatsAppController extends Controller
         return view('admin.whatsapp.groups', [
             'groups' => $groups,
         ]);
+    }
+
+    public function contactsPage(Request $request): View
+    {
+        $search = trim((string) $request->query('search', ''));
+
+        $contacts = WhatsAppContact::query()
+            ->with('latestConsent')
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($contactQuery) use ($search) {
+                    $contactQuery
+                        ->where('contact_name', 'like', '%' . $search . '%')
+                        ->orWhere('phone_number', 'like', '%' . $search . '%');
+                });
+            })
+            ->orderBy('contact_name')
+            ->orderBy('phone_number')
+            ->paginate(20)
+            ->withQueryString();
+
+        return view('admin.whatsapp.contacts', [
+            'contacts' => $contacts,
+            'search' => $search,
+        ]);
+    }
+
+    public function storeContact(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'contact_name' => ['nullable', 'string', 'max:255'],
+            'phone_number' => ['required', 'string', 'max:30'],
+        ]);
+
+        $phone = WhatsAppPhoneNormalizer::normalize($validated['phone_number']);
+
+        if (strlen($phone) < 8 || strlen($phone) > 15) {
+            return back()->withErrors([
+                'phone_number' => 'Enter a valid phone number with 8 to 15 digits.',
+            ])->withInput();
+        }
+
+        $contact = WhatsAppContact::firstOrNew([
+            'phone_number' => $phone,
+        ]);
+
+        if ($contact->exists) {
+            return back()->withErrors([
+                'phone_number' => 'This number already exists in Central Contacts.',
+            ])->withInput();
+        }
+
+        $contact->contact_name = $validated['contact_name'] ?? null;
+        $contact->contact_type = 'manual';
+        $contact->save();
+
+        return redirect()
+            ->route('admin.whatsapp.contacts')
+            ->with('success', 'Contact added successfully. No marketing consent was assumed.');
+    }
+
+    public function updateContact(Request $request, WhatsAppContact $contact): RedirectResponse
+    {
+        $validated = $request->validate([
+            'contact_name' => ['nullable', 'string', 'max:255'],
+            'phone_number' => ['required', 'string', 'max:30'],
+        ]);
+
+        $phone = WhatsAppPhoneNormalizer::normalize($validated['phone_number']);
+
+        if (strlen($phone) < 8 || strlen($phone) > 15) {
+            return back()->withErrors([
+                'phone_number' => 'Enter a valid phone number with 8 to 15 digits.',
+            ])->withInput();
+        }
+
+        $duplicate = WhatsAppContact::where('phone_number', $phone)
+            ->where('id', '!=', $contact->id)
+            ->exists();
+
+        if ($duplicate) {
+            return back()->withErrors([
+                'phone_number' => 'Another contact already uses this number.',
+            ])->withInput();
+        }
+
+        $contact->update([
+            'contact_name' => $validated['contact_name'] ?? null,
+            'phone_number' => $phone,
+        ]);
+
+        return redirect()
+            ->route('admin.whatsapp.contacts')
+            ->with('success', 'Contact updated successfully.');
     }
 
     public function storeGroupMessage(Request $request, int $group): RedirectResponse
@@ -1280,15 +1422,23 @@ class AdminWhatsAppController extends Controller
         $members = $group->members()->get();
 
         $normalizePhone = static function (?string $phone): string {
-            return preg_replace('/\D+/', '', $phone ?? '');
+            return WhatsAppPhoneNormalizer::normalize($phone);
         };
 
         // Read conversation metadata first; do not load unrelated message history.
-        $allConversations = WhatsAppConversation::query()->get();
+        // Prefer the most recently active conversation when duplicate phone formats exist.
+        $allConversations = WhatsAppConversation::query()
+            ->orderByDesc('last_message_at')
+            ->orderByDesc('updated_at')
+            ->orderByDesc('id')
+            ->get();
 
         $conversationByPhone = $allConversations
             ->filter(function ($conversation) use ($normalizePhone) {
                 return $normalizePhone($conversation->phone_number) !== '';
+            })
+            ->unique(function ($conversation) use ($normalizePhone) {
+                return $normalizePhone($conversation->phone_number);
             })
             ->keyBy(function ($conversation) use ($normalizePhone) {
                 return $normalizePhone($conversation->phone_number);
@@ -1309,7 +1459,7 @@ class AdminWhatsAppController extends Controller
             }
         }
 
-        // Load messages only for conversations belonging to saved group members.
+        // Load messages only for the already-selected conversations.
         $matchedConversations = WhatsAppConversation::query()
             ->whereIn('id', array_values(array_unique($matchingIds)))
             ->with([
@@ -1319,14 +1469,16 @@ class AdminWhatsAppController extends Controller
                 },
             ])
             ->get()
-            ->keyBy(function ($conversation) use ($normalizePhone) {
-                return $normalizePhone($conversation->phone_number);
-            });
+            ->keyBy('id');
 
         foreach ($members as $member) {
             $phone = $normalizePhone($member->phone_number);
-            $conversation = $phone !== ''
-                ? $matchedConversations->get($phone)
+            $selectedConversation = $phone !== ''
+                ? $conversationByPhone->get($phone)
+                : null;
+
+            $conversation = $selectedConversation
+                ? $matchedConversations->get($selectedConversation->id)
                 : null;
 
             $member->setRelation('conversation', $conversation);
