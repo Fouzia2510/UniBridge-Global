@@ -17,7 +17,7 @@ return Application::configure(
         function (Middleware $middleware): void {
 
             $middleware->trustProxies(
-                at: ['127.0.0.1', '::1'],
+               at: '*',
                 headers: Request::HEADER_X_FORWARDED_FOR
                     | Request::HEADER_X_FORWARDED_HOST
                     | Request::HEADER_X_FORWARDED_PORT
