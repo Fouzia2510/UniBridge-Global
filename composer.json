@@ -9,7 +9,7 @@
         "php": "^8.2",
         "barryvdh/laravel-dompdf": "^3.1",
         "google-gemini-php/laravel": "^2.0",
-        "google/apiclient": "*",
+        "google/apiclient": "^2.19.4",
         "laravel/framework": "^12.0",
         "laravel/passkeys": "^0.2.1",
         "laravel/tinker": "^2.10.1",
@@ -30,7 +30,18 @@
             "App\\": "app/",
             "Database\\Factories\\": "database/factories/",
             "Database\\Seeders\\": "database/seeders/"
-        }
+        },
+        "classmap": [
+            "app/services/GeminiService.php",
+            "app/services/GoogleClassroomService.php",
+            "app/services/GoogleMeetService.php",
+            "app/services/KapsoWhatsAppService.php",
+            "app/services/OllamaService.php",
+            "app/services/StudentGoogleClassroomService.php",
+            "app/services/UniversityMatchingService.php",
+            "app/services/WhatsAppAIResponder.php",
+            "app/services/WhatsAppPhoneNormalizer.php"
+        ]
     },
     "autoload-dev": {
         "psr-4": {

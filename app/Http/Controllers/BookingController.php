@@ -26,6 +26,7 @@ class BookingController extends Controller
                 'role',
                 User::ROLE_CONSULTANT
             )
+            ->where('is_approved', true)
             ->orderBy('name')
             ->get();
 
@@ -45,6 +46,7 @@ class BookingController extends Controller
                     'role',
                     User::ROLE_CONSULTANT
                 )
+                ->where('is_approved', true)
                 ->first();
 
             if ($selectedConsultant) {
@@ -111,6 +113,7 @@ class BookingController extends Controller
                 'role',
                 User::ROLE_CONSULTANT
             )
+            ->where('is_approved', true)
             ->first();
 
         abort_if(

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
@@ -585,6 +585,11 @@ Route::put('/universities/{university}', [
             AdminController::class,
             'showPayment'
         ])->name('applications.payment');
+
+        Route::get('/applications/{application}/payments/{payment}/proof', [
+            AdminController::class,
+            'downloadPaymentProof'
+        ])->name('applications.payment.proof');
 
         Route::patch('/applications/{application}/payment/verify', [
             AdminController::class,

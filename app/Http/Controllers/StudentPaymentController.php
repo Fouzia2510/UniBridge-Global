@@ -78,11 +78,6 @@ class StudentPaymentController extends Controller
                 'max:5120',
             ],
 
-            'admin_notes' => [
-                'nullable',
-                'string',
-                'max:2000',
-            ],
         ]);
 
         /*
@@ -111,7 +106,7 @@ class StudentPaymentController extends Controller
         */
 
         $proofPath = $request->file('proof')
-            ->store('payment-proofs', 'public');
+            ->store('payment-proofs', 'local');
 
         /*
         |--------------------------------------------------------------------------
@@ -145,8 +140,6 @@ class StudentPaymentController extends Controller
 
             'status' => 'pending',
 
-            'admin_notes' =>
-                $validated['admin_notes'] ?? null,
         ]);
 
         /*

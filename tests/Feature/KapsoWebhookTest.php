@@ -14,6 +14,17 @@ class KapsoWebhookTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        config([
+            'services.kapso.ai_dry_run' => false,
+            'services.kapso.ai_auto_reply' => false,
+            'services.kapso.ai_live_send_enabled' => false,
+        ]);
+    }
+
     public function test_webhook_rejects_request_without_signature(): void
     {
         config([
@@ -1042,6 +1053,265 @@ public function test_incoming_message_uses_latest_matching_conversation(): void
         $this->assertDatabaseHas('whatsapp_conversations', [
             'id' => $conversation->id,
             'last_message_at' => $lastMessageAt->toDateTimeString(),
+        ]);
+    }
+
+    public function test_ai_dry_run_generates_reply_without_sending_whatsapp_message(): void
+    {
+        $secret = 'test-webhook-secret';
+
+        config([
+            'services.kapso.webhook_secret' => $secret,
+            'services.kapso.ai_dry_run' => true,
+            'services.kapso.ai_auto_reply' => false,
+            'services.kapso.ai_live_send_enabled' => false,
+        ]);
+
+        $responder = \Mockery::mock(
+            \App\Services\WhatsAppAIResponder::class
+        );
+
+        $responder->shouldReceive('generateReply')
+            ->once()
+            ->with('Hello UniBridge')
+            ->andReturn('This is a dry-run response.');
+
+        $this->app->instance(
+            \App\Services\WhatsAppAIResponder::class,
+            $responder
+        );
+
+        $payload = json_encode([
+            'type' => 'whatsapp.message.received',
+            'conversation' => [
+                'phone_number' => '923000000099',
+            ],
+            'message' => [
+                'id' => 'ai-dry-run-test-001',
+                'from' => '923000000099',
+                'type' => 'text',
+                'text' => [
+                    'body' => 'Hello UniBridge',
+                ],
+            ],
+        ], JSON_THROW_ON_ERROR);
+
+        $signature = hash_hmac('sha256', $payload, $secret);
+
+        $response = $this->call(
+            'POST',
+            '/webhooks/kapso',
+            [],
+            [],
+            [],
+            [
+                'CONTENT_TYPE' => 'application/json',
+                'HTTP_X_WEBHOOK_SIGNATURE' => $signature,
+            ],
+            $payload
+        );
+
+        $response->assertOk();
+
+        $this->assertDatabaseHas('whatsapp_messages', [
+            'provider_message_id' => 'ai-dry-run-test-001',
+            'direction' => 'inbound',
+            'message_text' => 'Hello UniBridge',
+        ]);
+
+        $this->assertDatabaseHas('whatsapp_messages', [
+            'direction' => 'outbound',
+            'message_text' => 'This is a dry-run response.',
+            'status' => 'draft',
+            'provider_message_id' => null,
+        ]);
+
+        $this->assertSame(
+            0,
+            WhatsAppMessage::query()
+                ->where('direction', 'outbound')
+                ->whereNotNull('provider_message_id')
+                ->count()
+        );
+    }
+
+    public function test_live_auto_reply_sends_and_persists_the_provider_message(): void
+    {
+        $secret = 'test-webhook-secret';
+
+        config([
+            'services.kapso.webhook_secret' => $secret,
+            'services.kapso.ai_dry_run' => false,
+            'services.kapso.ai_auto_reply' => true,
+            'services.kapso.ai_live_send_enabled' => true,
+            'services.kapso.sandbox_mode' => false,
+        ]);
+
+        $responder = \Mockery::mock(\App\Services\WhatsAppAIResponder::class);
+        $responder->shouldReceive('generateReply')
+            ->once()
+            ->with('How do I contact UniBridge?')
+            ->andReturn('Please use your UniBridge account to contact the team.');
+        $this->app->instance(\App\Services\WhatsAppAIResponder::class, $responder);
+
+        $kapso = \Mockery::mock(\App\Services\KapsoWhatsAppService::class);
+        $kapso->shouldReceive('sendText')
+            ->once()
+            ->with('923001112233', 'Please use your UniBridge account to contact the team.')
+            ->andReturn([
+                'messages' => [[
+                    'id' => 'wamid.auto-reply-test',
+                    'message_status' => 'accepted',
+                ]],
+            ]);
+        $this->app->instance(\App\Services\KapsoWhatsAppService::class, $kapso);
+
+        $payload = json_encode([
+            'type' => 'whatsapp.message.received',
+            'conversation' => ['phone_number' => '923001112233'],
+            'message' => [
+                'id' => 'auto-reply-incoming-001',
+                'from' => '923001112233',
+                'type' => 'text',
+                'timestamp' => time(),
+                'text' => ['body' => 'How do I contact UniBridge?'],
+            ],
+        ], JSON_THROW_ON_ERROR);
+
+        $response = $this->call(
+            'POST',
+            '/webhooks/kapso',
+            [],
+            [],
+            [],
+            [
+                'CONTENT_TYPE' => 'application/json',
+                'HTTP_X_WEBHOOK_SIGNATURE' => hash_hmac('sha256', $payload, $secret),
+            ],
+            $payload
+        );
+
+        $response->assertOk();
+
+        $this->assertDatabaseHas('whatsapp_messages', [
+            'provider_message_id' => 'wamid.auto-reply-test',
+            'direction' => 'outbound',
+            'message_text' => 'Please use your UniBridge account to contact the team.',
+            'status' => 'accepted',
+        ]);
+    }
+
+    public function test_audio_without_transcription_saves_a_safe_dry_run_fallback(): void
+    {
+        $secret = 'test-webhook-secret';
+
+        config([
+            'services.kapso.webhook_secret' => $secret,
+            'services.kapso.ai_dry_run' => true,
+            'services.kapso.ai_auto_reply' => false,
+            'services.kapso.ai_live_send_enabled' => false,
+        ]);
+
+        $responder = \Mockery::mock(\App\Services\WhatsAppAIResponder::class);
+        $responder->shouldNotReceive('generateReply');
+        $this->app->instance(\App\Services\WhatsAppAIResponder::class, $responder);
+
+        $payload = json_encode([
+            'type' => 'whatsapp.message.received',
+            'conversation' => ['phone_number' => '923001112244'],
+            'message' => [
+                'id' => 'audio-without-transcript-001',
+                'from' => '923001112244',
+                'type' => 'audio',
+                'timestamp' => time(),
+                'audio' => ['id' => 'media-audio-001', 'mime_type' => 'audio/ogg'],
+            ],
+        ], JSON_THROW_ON_ERROR);
+
+        $response = $this->call(
+            'POST',
+            '/webhooks/kapso',
+            [],
+            [],
+            [],
+            [
+                'CONTENT_TYPE' => 'application/json',
+                'HTTP_X_WEBHOOK_SIGNATURE' => hash_hmac('sha256', $payload, $secret),
+            ],
+            $payload
+        );
+
+        $response->assertOk();
+
+        $this->assertDatabaseHas('whatsapp_messages', [
+            'provider_message_id' => 'audio-without-transcript-001',
+            'direction' => 'inbound',
+            'message_type' => 'audio',
+            'message_text' => null,
+        ]);
+
+        $draft = WhatsAppMessage::query()
+            ->where('direction', 'outbound')
+            ->where('status', 'draft')
+            ->firstOrFail();
+
+        $this->assertStringContainsString(
+            'transcription is not available yet',
+            (string) $draft->message_text
+        );
+    }
+
+    public function test_audio_with_provider_transcription_is_forwarded_to_ai_responder(): void
+    {
+        $secret = 'test-webhook-secret';
+
+        config([
+            'services.kapso.webhook_secret' => $secret,
+            'services.kapso.ai_dry_run' => true,
+        ]);
+
+        $responder = \Mockery::mock(\App\Services\WhatsAppAIResponder::class);
+        $responder->shouldReceive('generateReply')
+            ->once()
+            ->with('Please explain UK student visa steps.')
+            ->andReturn('Check the official UK student visa guidance and your CAS requirements.');
+        $this->app->instance(\App\Services\WhatsAppAIResponder::class, $responder);
+
+        $payload = json_encode([
+            'type' => 'whatsapp.message.received',
+            'conversation' => ['phone_number' => '923001112255'],
+            'message' => [
+                'id' => 'audio-transcription-001',
+                'from' => '923001112255',
+                'type' => 'audio',
+                'timestamp' => time(),
+                'audio' => [
+                    'id' => 'media-audio-002',
+                    'transcription' => 'Please explain UK student visa steps.',
+                ],
+            ],
+        ], JSON_THROW_ON_ERROR);
+
+        $response = $this->call(
+            'POST',
+            '/webhooks/kapso',
+            [],
+            [],
+            [],
+            [
+                'CONTENT_TYPE' => 'application/json',
+                'HTTP_X_WEBHOOK_SIGNATURE' => hash_hmac('sha256', $payload, $secret),
+            ],
+            $payload
+        );
+
+        $response->assertOk();
+
+        $this->assertDatabaseHas('whatsapp_messages', [
+            'provider_message_id' => 'audio-transcription-001',
+            'direction' => 'inbound',
+            'message_type' => 'audio',
+            'message_text' => 'Please explain UK student visa steps.',
         ]);
     }
 }

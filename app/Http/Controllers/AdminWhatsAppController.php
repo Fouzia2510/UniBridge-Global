@@ -736,29 +736,35 @@ $phone = WhatsAppPhoneNormalizer::normalize(
     /**
      * Delete a group and its saved memberships.
      */
-    public function deleteGroup(
-        WhatsAppGroup $group
-    ): RedirectResponse {
-        $hasBroadcastHistory = WhatsAppBroadcast::query()
-            ->where('whatsapp_group_id', $group->id)
-            ->exists();
+  /**
+ * Delete a group only when it has no saved history.
+ */
+public function deleteGroup(
+    WhatsAppGroup $group
+): RedirectResponse {
+    $hasBroadcastHistory = WhatsAppBroadcast::query()
+        ->where('whatsapp_group_id', $group->id)
+        ->exists();
 
-        if ($hasBroadcastHistory) {
-            return redirect()
-                ->route('admin.whatsapp.groups')
-                ->with(
-                    'error',
-                    'This group cannot be deleted because it has saved broadcast history. Keep the group to preserve its history.'
-                );
-        }
+    $hasInternalMessages = WhatsAppGroupMessage::query()
+        ->where('whatsapp_group_id', $group->id)
+        ->exists();
 
-        $group->delete();
-
+    if ($hasBroadcastHistory || $hasInternalMessages) {
         return redirect()
             ->route('admin.whatsapp.groups')
-            ->with('success', 'WhatsApp group deleted successfully.');
+            ->with(
+                'error',
+                'This group cannot be deleted because it has saved broadcast history or internal messages. Keep the group to preserve its history.'
+            );
     }
 
+    $group->delete();
+
+    return redirect()
+        ->route('admin.whatsapp.groups')
+        ->with('success', 'WhatsApp group deleted successfully.');
+}
        /**
      * Add a saved contact and record consent only when confirmed.
      */

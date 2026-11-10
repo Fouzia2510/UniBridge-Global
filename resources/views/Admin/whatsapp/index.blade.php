@@ -56,6 +56,29 @@
                 </div>
             @endif
 
+            @if (config('services.kapso.ai_dry_run'))
+                <div class="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                    <strong>AI reply dry-run is ON.</strong>
+                    Incoming messages can create reply drafts, but UniBridge will not send automatic WhatsApp replies.
+                    An active Kapso webhook and reachable HTTPS callback are also required for incoming messages.
+                </div>
+            @elseif (config('services.kapso.ai_auto_reply') && config('services.kapso.ai_live_send_enabled') && !config('services.kapso.sandbox_mode'))
+                <div class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+                    <strong>Live AI auto-reply is enabled in app settings.</strong>
+                    Replies are limited to the active WhatsApp customer-service window. Verify Kapso webhook delivery and monitor provider message status.
+                </div>
+            @elseif (config('services.kapso.sandbox_mode'))
+                <div class="mb-4 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
+                    <strong>WhatsApp sandbox mode is ON.</strong>
+                    Automatic replies are restricted to the configured test recipient and cannot serve all students or consultants.
+                </div>
+            @else
+                <div class="mb-4 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+                    <strong>AI auto-reply is disabled.</strong>
+                    Incoming messages will be saved in the inbox without automatic replies.
+                </div>
+            @endif
+
             <div class="grid min-h-[680px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm lg:grid-cols-[320px_minmax(0,1fr)]">
 
                 {{-- LEFT: SEARCH AND CHAT LIST --}}

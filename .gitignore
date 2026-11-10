@@ -83,3 +83,39 @@ Thumbs.db
 /public/hot
 *-backup*
 *_backup*
+
+# UniBridge sensitive local diagnostic files
+/kapso-*.json
+/kapso-*.txt
+/webhook-*.txt
+/permission-check.tmp
+
+# Environment backups
+.env.backup*
+.env.before-*
+.env.*.bak
+
+# Local runtime and user-generated storage
+/storage/app/**
+/storage/framework/**
+/storage/logs/**
+/storage/*.key
+
+
+# UniBridge private diagnostic and provider data
+/kapso-*.json
+/kapso-*.txt
+/webhook-*.txt
+/permission-check.tmp
+/.env.backup*
+/.env.before-*
+/.env.*.bak
+
+# Local application data
+/storage/app/**
+/storage/framework/**
+/storage/logs/**
+/storage/*.key
+
+
+/tests/Feature/permission-check.tmp

@@ -87,7 +87,10 @@ class MeetingJoinTrackingTest extends TestCase
             'role' => User::ROLE_STUDENT,
             'is_approved' => true,
         ]);
-        $consultant = User::factory()->create(['role' => User::ROLE_CONSULTANT]);
+        $consultant = User::factory()->create([
+            'role' => User::ROLE_CONSULTANT,
+            'is_approved' => true,
+        ]);
         $slot = AvailabilitySlot::create([
             'consultant_id' => $consultant->id,
             'date' => '2026-10-30',

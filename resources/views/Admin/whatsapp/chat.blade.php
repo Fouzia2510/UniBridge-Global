@@ -156,16 +156,30 @@
                             <div class="max-w-[85%] rounded-2xl border px-4 py-3 shadow-sm
                                 {{ $message->direction === 'outbound' ? 'border-indigo-200 bg-indigo-50' : 'border-slate-200 bg-white' }}">
 
+                                @php
+                                    $isAiDraft = $message->direction === 'outbound'
+                                        && $message->status === 'draft'
+                                        && data_get($message->payload, 'ai_source') === 'kapso_webhook';
+                                @endphp
+
                                 <div class="mb-2 flex flex-wrap items-center gap-2 text-xs">
-                                    <span class="font-bold {{ $message->direction === 'outbound' ? 'text-indigo-700' : 'text-emerald-700' }}">
-                                        {{ $message->direction === 'outbound' ? 'Sent' : 'Received' }}
-                                    </span>
+                                    @if ($isAiDraft)
+                                        <span class="rounded-full bg-amber-100 px-2 py-1 font-bold text-amber-800">
+                                            AI GENERATED — NOT SENT
+                                        </span>
+                                    @else
+                                        <span class="font-bold {{ $message->direction === 'outbound' ? 'text-indigo-700' : 'text-emerald-700' }}">
+                                            {{ $message->direction === 'outbound' ? 'Sent' : 'Received' }}
+                                        </span>
+                                    @endif
+
                                     <span class="text-slate-500">
                                         {{ ucfirst($message->message_type ?? 'text') }}
                                     </span>
+
                                     @if ($message->status)
                                         <span class="text-slate-500">
-                                             -  {{ ucfirst($message->status) }}
+                                            - {{ ucfirst($message->status) }}
                                         </span>
                                     @endif
                                 </div>

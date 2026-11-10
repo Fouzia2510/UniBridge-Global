@@ -845,6 +845,52 @@
             transform: translateY(-2px);
         }
 
+        .whatsapp-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 9px;
+            color: #fff;
+            background: #16a34a;
+            box-shadow: 0 8px 20px rgba(22,163,74,.18);
+        }
+
+        .whatsapp-link:hover {
+            color: #fff;
+            background: #15803d;
+            transform: translateY(-2px);
+        }
+
+        .whatsapp-float {
+            position: fixed;
+            right: 22px;
+            bottom: 94px;
+            z-index: 9998;
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            padding: 13px 18px;
+            border-radius: 999px;
+            background: #16a34a;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 800;
+            box-shadow: 0 8px 24px rgba(15,23,42,.22);
+            transition: .2s ease;
+        }
+
+        .whatsapp-float:hover {
+            color: #fff;
+            background: #15803d;
+            transform: translateY(-2px);
+        }
+
+        .whatsapp-float svg {
+            width: 20px;
+            height: 20px;
+            flex: 0 0 20px;
+        }
+
         /* FOOTER */
 
         footer {
@@ -1029,6 +1075,12 @@
                 gap: 30px;
             }
 
+            .whatsapp-float {
+                right: 14px;
+                bottom: 88px;
+                padding: 12px 15px;
+            }
+
             .brand {
                 font-size: 20px;
             }
@@ -1148,6 +1200,17 @@
                     </a>
 
                 @endauth
+
+                <a
+                    href="https://wa.me/923034253277?text=Assalam%20o%20Alaikum%20UniBridge%2C%20mujhe%20admission%20ya%20visa%20guidance%20chahiye."
+                    class="btn whatsapp-link"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Contact UniBridge on WhatsApp"
+                >
+                    <span aria-hidden="true">☏</span>
+                    WhatsApp Support
+                </a>
 
             </div>
 
@@ -2190,6 +2253,8 @@
                     <a href="#location">Lahore, Pakistan</a>
                     <a href="#location">View Map</a>
                     <a href="#how-it-works">How It Works</a>
+                    <a href="https://wa.me/923034253277?text=Assalam%20o%20Alaikum%20UniBridge%2C%20mujhe%20admission%20ya%20visa%20guidance%20chahiye."
+                       target="_blank" rel="noopener noreferrer">WhatsApp Support</a>
                 </div>
 
             </div>
@@ -2204,6 +2269,19 @@
     </div>
 
 </footer>
+
+<a
+    href="https://wa.me/923034253277?text=Assalam%20o%20Alaikum%20UniBridge%2C%20mujhe%20admission%20ya%20visa%20guidance%20chahiye."
+    class="whatsapp-float"
+    target="_blank"
+    rel="noopener noreferrer"
+    aria-label="Open UniBridge WhatsApp support"
+>
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M12.04 2a9.87 9.87 0 0 0-8.48 14.92L2 22l5.25-1.38A9.93 9.93 0 1 0 12.04 2Zm0 18.05a8.1 8.1 0 0 1-4.13-1.13l-.3-.18-3.12.82.83-3.04-.2-.31a8.1 8.1 0 1 1 6.92 3.84Zm4.44-6.07c-.24-.12-1.42-.7-1.64-.78-.22-.08-.38-.12-.54.12-.16.24-.62.78-.76.94-.14.16-.28.18-.52.06-.24-.12-1.01-.37-1.93-1.18-.71-.63-1.19-1.42-1.33-1.66-.14-.24-.02-.37.1-.49.1-.1.24-.28.36-.42.12-.14.16-.24.24-.4.08-.16.04-.3-.02-.42-.06-.12-.54-1.3-.74-1.78-.2-.47-.4-.4-.54-.4h-.46c-.16 0-.42.06-.64.3-.22.24-.84.82-.84 2s.86 2.32.98 2.48c.12.16 1.69 2.58 4.1 3.62.57.25 1.02.4 1.37.5.58.18 1.1.15 1.51.09.46-.07 1.42-.58 1.62-1.14.2-.56.2-1.04.14-1.14-.06-.1-.22-.16-.46-.28Z"/>
+    </svg>
+    Chat on WhatsApp
+</a>
 
 {{-- Public UniBridge AI Chatbot --}}
 <div

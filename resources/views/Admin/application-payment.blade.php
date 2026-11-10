@@ -240,7 +240,7 @@
                                 </p>
 
                                 <a
-                                    href="{{ asset('storage/' . $payment->proof_path) }}"
+                                    href="{{ route('admin.applications.payment.proof', ['application' => $application, 'payment' => $payment]) }}"
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     class="mt-2 inline-flex items-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-800 transition hover:border-indigo-400 hover:text-indigo-700"

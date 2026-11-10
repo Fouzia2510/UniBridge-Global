@@ -12,6 +12,8 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\View\View;
 
 class AdminController extends Controller
@@ -379,6 +381,25 @@ class AdminController extends Controller
                 'payment'
             )
         );
+    }
+
+    public function downloadPaymentProof(
+        Application $application,
+        Payment $payment
+    ): StreamedResponse {
+        abort_unless($payment->application_id === $application->id, 404);
+
+        $path = (string) $payment->proof_path;
+        abort_if($path === '' || str_contains($path, '..'), 404);
+
+        if (Storage::disk('local')->exists($path)) {
+            return Storage::disk('local')->download($path);
+        }
+
+        // Keep legacy submissions accessible to admins until the migration command is run.
+        abort_unless(Storage::disk('public')->exists($path), 404);
+
+        return Storage::disk('public')->download($path);
     }
 
     public function verifyPayment(
